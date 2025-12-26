@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BadgeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  BANNED
+}
+
+enum AuditAction {
+  LOGIN
+  SUBMITTED
+  APPROVED
+  REJECTED
+  BANNED
+  UNBANNED
+  DELETED
+  RATE_LIMIT_HIT
+  FILE_UPLOADED
+}
+
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+model User {
+  id             String   @id
+  username       String
+  globalName     String?
+  avatar         String?
+  role           Role     @default(USER)
+  bannedUntil    DateTime?
+  bannedReason   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  badges         Badge[]
+  reviews        Badge[]  @relation("BadgeReviews")
+  auditLogs      AuditLog[]
+}
+
+model Badge {
+  id             String      @id @default(cuid())
+  name           String
+  iconUrl        String?
+  pendingKey     String?
+  creatorId      String
+  creator        User        @relation(fields: [creatorId], references: [id])
+  status         BadgeStatus @default(PENDING)
+  reviewReason   String?
+  reviewerId     String?
+  reviewer       User?       @relation("BadgeReviews", fields: [reviewerId], references: [id])
+  r2Key          String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  auditLogs      AuditLog[]
+}
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  badgeId   String?
+  badge     Badge?      @relation(fields: [badgeId], references: [id])
+  actorId   String?
+  actor     User?       @relation(fields: [actorId], references: [id])
+  action    AuditAction
+  metadata  Json?
+  createdAt DateTime    @default(now())
+}

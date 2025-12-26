@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: freebadges-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: freebadges
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_DB: freebadges
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U freebadges"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: freebadges-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5179
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://freebadges:${DB_PASSWORD:-changeme}@postgres:5432/freebadges
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      TRUSTED_ORIGINS: ${TRUSTED_ORIGINS:-https://discord.com}
+      SESSION_SECRET: ${SESSION_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+      RATE_LIMIT_WINDOW: ${RATE_LIMIT_WINDOW:-1 minute}
+      DAILY_SUBMISSION_LIMIT: ${DAILY_SUBMISSION_LIMIT:-100}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      DISCORD_REDIRECT_URI: ${DISCORD_REDIRECT_URI}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      MODERATOR_IDS: ${MODERATOR_IDS}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME}
+      R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL}
+      WEB_DASHBOARD_URL: ${WEB_DASHBOARD_URL}
+    ports:
+      - "5179:5179"
+    volumes:
+      - ./data:/app/data
+
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://localhost:5179}
+    container_name: freebadges-frontend
+    restart: unless-stopped
+    ports:
+      - "4173:4173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
