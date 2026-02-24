@@ -21,7 +21,7 @@ const app = Fastify({
 
 await app.register(cors, {
     origin: (origin, cb) => {
-        if (!origin || origin === "null" || config.corsOrigins.includes(origin) || origin === "https://discord.com") {
+        if (!origin || origin === "null" || config.corsOrigins.includes(origin) || origin === "https://discord.com" || origin === "https://ptb.discord.com" || origin === "https://canary.discord.com") {
             return cb(null, true);
         }
         cb(new Error("Origin not allowed"), false);
@@ -113,4 +113,5 @@ declare module "fastify" {
         currentUser?: import("@prisma/client").User | null;
     }
 }
+
 
