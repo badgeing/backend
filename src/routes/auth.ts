@@ -52,7 +52,7 @@ export async function authRoutes(app: FastifyInstance) {
 
         const payload = { success: true, user, token: jwt };
 
-        if (query?.clientMod === "equicord") {
+        if (query?.clientMod === "kzcord") {
             return reply.send(payload);
         }
 
@@ -68,3 +68,4 @@ export async function authRoutes(app: FastifyInstance) {
         return { success: true };
     });
 }
+
